@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, viewport-fit=cover">
+    <link rel="stylesheet" href="destyle.css">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="SpeedFlex.css">
+    <link rel="stylesheet" href="cssui.min.css">
+    <link rel="stylesheet" href="cssui.modal.min.css">
+    <script src="main.js" defer></script>
+    <script src="kana-roman.js" defer></script>
+    <script src="47prefec-zenkana.js" defer></script>
+    <script src="https://kit.fontawesome.com/57148d5cd1.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- JSONP対応 -->
+    <script src="https://cdn.jsdelivr.net/npm/fetch-jsonp@1.1.3/build/fetch-jsonp.min.js"></script>
+    <!-- フォント -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kaisei+Tokumin:wght@700&family=Noto+Sans+JP:wght@100;300;400;500;700;900&display=swap" rel="stylesheet">
+    <title>日英住所変換</title>
+</head>
+<body>
+    <!-- 不具合報告フォーム -->
+    <div class="modal none" id="reportmodal">
+        <span class="modalclose flex j-center a-center" id="modalclose" onclick="modalclose()">完了</span>
+        <iframe src="https://docs.google.com/forms/d/e/1FAIpQLSegmpe94HebcjmqFdTljnPtdLQbDigaPED-TetInYTYJ1b0wA/viewform?embedded=true"  frameborder="0" marginheight="0" marginwidth="0">読み込んでいます…</iframe>
+    </div>
+    <!--  -->
+    <main class="flex column a-center evenly">
+        <h1>日英住所変換</h1>
+        <div class="wp-block-group is-style-letter">
+            <div class="wp-block-group__inner-container flex column a-start between">
+                <div class="letter__rows">
+                    <p class="letter__leftitem"><span class="required">郵便番号</span></p>
+                    <div class="letter__rightitem">
+                        <input type="text" inputmode="numeric" id="zipcode-1" maxlength="3" placeholder="123" onkeyup="nextfield(this)"  class="input-short">
+                        <span class="hyphen">-</span>
+                        <input type="text" inputmode="numeric" id="zipcode-2" maxlength="4" placeholder="4567" onkeyup="searchZip(this)" class="input-short">
+                    </div>
+                </div>
+                <div class="letter__rows">
+                    <p class="letter__leftitem">住所</p>
+                    <div class="letter__rightitem address">
+                        <span id="prefecture"></span>
+                        <span id="city"></span>
+                        <span id="area"></span>
+                    </div>
+                </div>
+                <div class="letter__rows">
+                    <p class="letter__leftitem"><span class="required">番地以降</span></p>
+                    <div class="letter__rightitem">
+                        <input type="text" placeholder="建物名は省略" class="input-long" id="more-address" inputmode="none" onclick="Tenkey()">
+                    </div>
+                </div>
+                <div class="letter__rows">
+                    <p class="letter__leftitem"><span class="optional">部屋番号</span></p>
+                    <div class="letter__rightitem">
+                        <input type="text" placeholder="305" inputmode="numeric" class="input-short" id="room">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <button class="main__button flex j-center a-center" onclick="convert()">変換</button>
+        <div class="wp-block-group is-style-letter">
+            <img src="convertedstamp.png" class="letter__stamp" id="stamp">
+            <div class="wp-block-group__inner-container">
+                <textarea id="output" class="letter__textarea"  placeholder="編集できます"></textarea>
+            </div>
+        </div>
+        <button class="main__button flex j-center a-center" onclick="copy()">コピー</button>
+    </main>
+    <footer class="flex evenly a-center" id="footer">
+        <div class="flex j-center a-center column footer__button" id="report" onclick="report()">
+            <i class="fa-solid fa-bullhorn"></i>
+            <p>不具合報告</p>
+        </div>
+        <div class="flex j-center a-center column footer__button" id="setting" onclick="openSetting()">
+            <i class="fa-solid fa-sliders"></i>
+            <p>変換設定</p>
+        </div>
+        <div class="flex j-center a-center column footer__button" id="tutorial" onclick="tutorial()">
+            <i class="fa-solid fa-circle-question"></i>
+            <p>表記ルール</p>
+        </div>
+    </footer> 
+    <aside>
+        <div id="modal" data-modal>
+
+            <!-- Modal  -->
+            <div class="flex j-center a-center column" id="dialog" data-modal-dialog role="dialog" aria-modal="true" aria-labelledby="dialog-title" tabindex="-1">
+              <h3 id="dialog-title" class="dialog__title">ローマ字表記</h3>
+              <div class="dialog__wrapper flex between">
+                <div class="dialog__box flex column a-start between" id="hepburn" onclick="changeRoman(this)">
+                    <div class="dialog__tooltip">
+                        <p>オススメ</p>
+                    </div>
+                    <p class="dialog__romans">ヘボン式</p>
+                    <ul class="dialog__example">
+                        <li>し→shi</li>
+                        <li>じ→ji</li>
+                        <li>ち→chi</li>
+                        <li>ぢ→ji</li>
+                        <li>つ→tsu</li>
+                        <li>づ→zu</li>
+                        <li>ふ→fu</li>
+                    </ul>
+                </div>
+                <div class="dialog__box flex column a-start between" id="kunrei" onclick="changeRoman(this)">
+                    <p class="dialog__romans">訓令式</p>
+                    <ul class="dialog__example">
+                        <li>し→si</li>
+                        <li>じ→zi</li>
+                        <li>ち→ti</li>
+                        <li>ぢ→di</li>
+                        <li>つ→tu</li>
+                        <li>づ→du</li>
+                        <li>ふ→hu</li>
+                    </ul>
+                </div>
+              </div>
+              <a href="#" data-modal-close>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </a>
+            </div>
+          
+            <!-- Background, click to close -->
+            <a href="#" data-modal-overlay></a>
+          </div>
+          <div id="modal-tenkey" data-modal>
+
+            <!-- Modal  -->
+            <div id="dialog" data-modal-dialog role="dialog" aria-modal="true" aria-labelledby="dialog-title" tabindex="-1" class="flex column a-center j-center tenkey__modal">
+              <div id="dialog-title" class="tenkey__output">
+                <p class="tenkey__name">番地以降（建物名は省略）</p>
+                <p id="tenkey__output"></p>
+              </div>
+              <div class="tenkey__examples__wrapper">
+                <p class="tenkey__examples">番地以降の住所は、建物名は省略し、数字とハイフンのみで表してください。</p>
+                <p class="tenkey__examples">例)：3丁目11番の5 ニッポンマンション →3-11-5</p>
+              </div>
+              <div class="tenkey__wrapper flex j-center a-center">
+                <input type="button" value="1" onclick="Keypush(this)" class="tenkey__button">
+                <input type="button" value="2" onclick="Keypush(this)" class="tenkey__button">
+                <input type="button" value="3" onclick="Keypush(this)" class="tenkey__button">
+                <input type="button" value="4" onclick="Keypush(this)" class="tenkey__button">
+                <input type="button" value="5" onclick="Keypush(this)" class="tenkey__button">
+                <input type="button" value="6" onclick="Keypush(this)" class="tenkey__button">
+                <input type="button" value="7" onclick="Keypush(this)" class="tenkey__button">
+                <input type="button" value="8" onclick="Keypush(this)" class="tenkey__button">
+                <input type="button" value="9" onclick="Keypush(this)" class="tenkey__button">
+                <input type="button" value="-" onclick="Keypush(this)" class="tenkey__button">
+                <input type="button" value="0" onclick="Keypush(this)" class="tenkey__button">
+                <div class="tenkey__button" onclick="Keydelete()"><i class="fa-solid fa-delete-left"></i></div>
+                <div class="tenkey__button invisible" ></div>
+                <div class="tenkey__button" onclick="Keydone()">OK</div>
+                <div class="tenkey__button invisible" ></div>
+              </div>
+              <a href="#" data-modal-close>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </a>
+            </div>
+          
+            <!-- Background, click to close -->
+            <a href="#" data-modal-overlay></a>
+          </div>
+          <div id="modal-tutorial" data-modal>
+            <!-- Modal  -->
+            <div id="dialog" data-modal-dialog role="dialog" aria-modal="true" aria-labelledby="dialog-title" tabindex="-1" class="rule__dialog flex column a-center">
+              <h3 id="dialog-title" class="dialog__title rule__title">英語表記のルール</h3>
+              <p>住所の英語表記は、日本語とは逆で、小さい住所から大きい住所という順番になります。</p>
+              <p class="rule__example">例)部屋番号→丁目・番地・号→市区町村→都道府県→郵便番号＋国名</p>
+              <p>ただし、丁目・番地・号は日本語と同じ順番で書くことができます。丁目・番地・号にあたる英語は省略することが一般的です。<span class="rule__example">例)5丁目3番3号→5-3-3</span></p>
+              <p>日本の地名をローマ字で表記する場合、ヘボン式を使うのが一般的です。当アプリではデフォルトでヘボン式になっています。</p>
+              <p>建物は番地でわかるため、建物名も省略することができます。マンション等の部屋番号は#で表します。</p>
+              <p>郵便番号と国名はセットで記述します。〒は書きません。</p>
+              <p>郵便局の私書箱を利用したい場合、「POB」と表記します。</p>
+              <p class="rule__example">例)POB 222, Hachiojishi, Tokyo, 010-0101 Japan </p>
+              <p>市区町村(shi,ku,chou,mura)の前にハイフン(-)をつける書き方もありますが、当アプリでは変換の精度を保証するためハイフンを省略する書き方を採用しています。</p>
+              <a href="#" data-modal-close>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </a>
+            </div>
+            <!-- Background, click to close -->
+            <a href="#" data-modal-overlay></a>
+          </div>
+    </aside>
+</body>
+</html>
